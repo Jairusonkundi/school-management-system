@@ -1,1 +1,38 @@
-<h2>Student Admission</h2><form class="card form-grid" method="post"><label>First name<input name="first_name" required></label><label>Last name<input name="last_name" required></label><label>Gender<select name="gender"><option value="male">Male</option><option value="female">Female</option></select></label><label>Date of birth<input type="date" name="date_of_birth" required></label><label>Section<select name="school_section"><option value="junior">Junior School</option><option value="secondary">Secondary School</option></select></label><label>Class<select name="class_id"><?php foreach ($lookups->classes() as $class): ?><option value="<?= e($class['id']) ?>"><?= e($class['name'].' '.$class['stream'].' ('.$class['school_section'].')') ?></option><?php endforeach; ?></select></label><label>Parent ID<input type="number" name="parent_id" required></label><label>Admission date<input type="date" name="admission_date" value="<?= date('Y-m-d') ?>" required></label><button>Register Student</button></form>
+<h2>Student Admission</h2>
+<form class="card form-grid" method="post">
+    <?= csrf_field() ?>
+    <label>Student name<input name="name" required></label>
+    <label>Class
+        <select name="class_id" required>
+            <?php foreach ($lookups->classes() as $class): ?>
+                <option value="<?= e($class['id']) ?>"><?= e($class['name'] . ' ' . $class['stream']) ?></option>
+            <?php endforeach; ?>
+        </select>
+    </label>
+    <label>Parent/Guardian
+        <select name="guardian_user_id">
+            <option value="">Not linked yet</option>
+            <?php foreach ($lookups->usersByRole('parent') as $parent): ?>
+                <option value="<?= e($parent['id']) ?>"><?= e($parent['name'] . ' - ' . $parent['email']) ?></option>
+            <?php endforeach; ?>
+        </select>
+    </label>
+    <label class="wide">Medical notes<textarea name="medical_notes" rows="3"></textarea></label>
+    <label class="wide">Discipline notes<textarea name="discipline_notes" rows="3"></textarea></label>
+    <button>Register Student</button>
+</form>
+
+<h3>Recent Students</h3>
+<table>
+    <thead><tr><th>Admission No</th><th>Name</th><th>Class</th><th>Guardian</th></tr></thead>
+    <tbody>
+    <?php foreach ($students as $student): ?>
+        <tr>
+            <td><?= e($student['admission_no']) ?></td>
+            <td><?= e($student['name']) ?></td>
+            <td><?= e($student['class_name'] . ' ' . $student['stream']) ?></td>
+            <td><?= e($student['guardian_name'] ?? 'Unlinked') ?></td>
+        </tr>
+    <?php endforeach; ?>
+    </tbody>
+</table>

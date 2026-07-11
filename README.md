@@ -1,49 +1,57 @@
 # Sunshine Kaseveni Academy School Management System
 
-A XAMPP-compatible PHP/MySQL School Management System for a Kenyan private school operating Junior School CBC and Secondary School streams.
+PHP/MySQL school management system for student records, attendance, examinations, fees, parent communication, self-service records, and management reports.
 
-## Architecture
+## Setup
 
-The project uses a 3-tier, MVC-style architecture:
+1. Copy this folder to `C:\xampp\htdocs\school-management-system`.
+2. Run `composer install` from the project root if `vendor/` is missing.
+3. Import `database/schema.sql` in phpMyAdmin or MySQL. It creates the `sunshine_sms` database, schema, seed classes, seed subjects, and seed admin.
+4. Edit `config/config.php` for local MySQL credentials, `base_url`, and SMTP credentials.
+5. Start Apache and MySQL in XAMPP.
+6. Open `http://localhost/school-management-system/public`.
+7. Login with `admin@sunshine.local` / `password`, then change that password.
 
-1. **Presentation layer**: HTML5, CSS3, vanilla JavaScript in `views/` and `public/assets/`.
-2. **Application layer**: OOP PHP controllers, models, services and RBAC helpers in `app/`.
-3. **Data layer**: Normalized MySQL schema in `database/schema.sql`.
+## Tests
 
-## Folder Structure
+Run these from the project root:
 
-```text
-app/Core              Framework-like database, auth and controller base classes
-app/Controllers       Request handlers for auth, dashboards, academics, finance, attendance
-app/Models            OOP data access classes using prepared PDO statements
-app/Services          PHPMailer notification service
-config                Database, base URL and SMTP configuration
-database              MySQL schema and seed data
-public                XAMPP document-root entry point and static assets
-views                 Frontend pages grouped by module and role
+```bash
+composer test
 ```
 
-## Key Modules
+For a full PHP syntax pass:
 
-- Authentication and role-based dashboards for Admin, Teacher, Student and Parent.
-- Student admissions with collision-free admission numbers and Junior/Secondary separation.
-- CBC learning-area assessments with Kenyan CBC descriptors.
-- Secondary CAT and end-term grading with automatic grade letter computation.
-- Daily attendance marking and dashboard analytics.
-- Fee accounts, payment recording and balance summaries.
-- PHPMailer SMTP service for absence, fee, performance and announcement emails.
+```powershell
+Get-ChildItem -Path app,public,views,tests -Recurse -Filter *.php | ForEach-Object { php -l $_.FullName }
+```
 
-## XAMPP Setup
+## Requirement Checklist
 
-1. Copy the project to `xampp/htdocs/school-management-system`.
-2. Run `composer install` in the project root to install PHPMailer and generate autoload files.
-3. Open phpMyAdmin and import `database/schema.sql`.
-4. Edit `config/config.php` for your MySQL and SMTP credentials.
-5. Visit `http://localhost/school-management-system/public`.
-6. Login with `admin@sunshine.local` and password `password`.
+- FR1 Admin student registration and sequential admission numbers: implemented in `database/schema.sql`, `app/Models/Student.php`, `app/Controllers/StudentController.php`, `views/students/create.php`.
+- FR2 Teacher attendance recording/history by class/date: implemented in `app/Models/Attendance.php`, `app/Controllers/AttendanceController.php`, `views/attendance/mark.php`.
+- FR3 Marks, grade, class average, and ranking: implemented in `app/Models/Academic.php`, `app/Controllers/AcademicController.php`, `views/academics/grades.php`.
+- FR4 Invoices, payments, balance updates, and overpayment rejection: implemented in `app/Models/Finance.php`, `app/Controllers/FinanceController.php`, `views/finance/invoices.php`, `views/finance/payments.php`.
+- FR5 Payment receipt email: implemented in `app/Controllers/FinanceController.php`, `app/Services/NotificationService.php`.
+- FR6 Unexcused absence email: implemented in `app/Controllers/AttendanceController.php`, `app/Services/NotificationService.php`.
+- FR7 Parent/student read-only portal: implemented in `app/Controllers/PortalController.php`, `views/portal/index.php`, with scoped models in `app/Models/Attendance.php`, `app/Models/Academic.php`, `app/Models/Finance.php`.
+- FR8 Admin reports: implemented in `app/Controllers/ReportController.php`, `views/reports/index.php`, with report queries in `app/Models/Student.php`, `app/Models/Attendance.php`, `app/Models/Academic.php`, `app/Models/Finance.php`.
+- FR9 RBAC on screens/actions: implemented in `app/Core/Auth.php`, `public/index.php`, controllers, and model ownership checks.
+- FR10 User create/update/deactivate: implemented in `app/Models/User.php`, `app/Controllers/UserController.php`, `views/users/index.php`.
+
+## Non-Functional Checklist
+
+- NFR1 Security: password hashes via `password_hash`, prepared PDO statements, CSRF tokens, HTTP-only/strict sessions, secure cookies on HTTPS, POST-only logout, active-user login checks, security headers, server-side RBAC.
+- NFR2 Performance: indexed schema for login, role lookups, attendance filters, result rankings, invoices, payments, and notifications.
+- NFR3 Usability: simple role-based navigation, focused forms, flash messages, responsive tables.
+- NFR4 Reliability: controller-level error handling, validation before writes, transactional admission/payment/invoice operations, SMTP failures logged and recorded.
+- NFR5 Maintainability: MVC-style split across `views/`, `app/Controllers/`, `app/Models/`, `app/Services/`, and `database/schema.sql`.
+- NFR6 Scalability: normalized schema with scoped queries and indexes suitable for 5,000+ student records.
+- NFR7 Compatibility: HTML5, CSS3, vanilla JavaScript, no frontend framework dependency; targets current Chrome, Firefox, and Edge.
 
 ## Production Notes
 
+- Serve over HTTPS in production.
+- Configure real SMTP credentials before relying on parent email delivery.
+- Restrict database credentials and keep backups outside the web root.
 - Change the seed admin password immediately after installation.
-- Configure a real SMTP mailbox before enabling automated parent notifications.
-- Use HTTPS, secure cookies and off-server backups in production.

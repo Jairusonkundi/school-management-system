@@ -1,1 +1,4 @@
-<h2>Parent Dashboard</h2><div class="card"><p>Receive absence alerts, fee balance notifications, and academic reports.</p></div>
+<h2>Parent Dashboard</h2>
+<div class="card">
+    <p>Open My Records to view your child&apos;s attendance, results, and fee statement.</p>
+</div>

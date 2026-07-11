@@ -13,7 +13,15 @@ class DashboardController extends Controller
     {
         Auth::requireRole(['admin','teacher','student','parent']);
         $role = Auth::user()['role'];
-        $data = ['counts' => (new Student())->countsBySection(), 'finance' => (new Finance())->summary(), 'attendance' => (new Attendance())->todayStats()];
-        $this->view($role . '/dashboard', $data);
+        $data = [];
+        if ($role === 'admin') {
+            $data = [
+                'counts' => (new Student())->countsByClass(),
+                'finance' => (new Finance())->summary(),
+                'attendance' => (new Attendance())->todayStats(),
+            ];
+        }
+        $view = in_array($role, ['parent', 'student'], true) ? $role . '/dashboard' : $role . '/dashboard';
+        $this->view($view, $data);
     }
 }

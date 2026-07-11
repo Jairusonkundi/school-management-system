@@ -1,176 +1,187 @@
 CREATE DATABASE IF NOT EXISTS sunshine_sms CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE sunshine_sms;
 
-CREATE TABLE users (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(120) NOT NULL,
-  email VARCHAR(160) NOT NULL UNIQUE,
-  password_hash VARCHAR(255) NOT NULL,
-  role ENUM('admin','teacher','student','parent') NOT NULL,
-  is_active TINYINT(1) NOT NULL DEFAULT 1,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  INDEX idx_users_role (role)
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS notifications;
+DROP TABLE IF EXISTS payments;
+DROP TABLE IF EXISTS fee_invoices;
+DROP TABLE IF EXISTS exam_results;
+DROP TABLE IF EXISTS attendance;
+DROP TABLE IF EXISTS teacher_assignments;
+DROP TABLE IF EXISTS students;
+DROP TABLE IF EXISTS subjects;
+DROP TABLE IF EXISTS classes;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS admission_sequences;
+SET FOREIGN_KEY_CHECKS = 1;
+
+CREATE TABLE admission_sequences (
+  id TINYINT PRIMARY KEY,
+  next_number INT NOT NULL,
+  CONSTRAINT chk_admission_next_number CHECK (next_number > 0)
 ) ENGINE=InnoDB;
 
 CREATE TABLE classes (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(60) NOT NULL,
-  school_section ENUM('junior','secondary') NOT NULL,
-  level_number TINYINT NOT NULL,
-  stream VARCHAR(30) DEFAULT NULL,
-  UNIQUE KEY uq_class (name, stream),
-  INDEX idx_classes_section (school_section)
-) ENGINE=InnoDB;
-
-CREATE TABLE parents (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  user_id INT NULL,
-  national_id VARCHAR(30) NULL UNIQUE,
-  phone VARCHAR(30) NOT NULL,
-  alternate_phone VARCHAR(30) NULL,
-  address VARCHAR(255) NULL,
-  relationship VARCHAR(40) NOT NULL DEFAULT 'Parent/Guardian',
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
-) ENGINE=InnoDB;
-
-CREATE TABLE teachers (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  user_id INT NOT NULL,
-  tsc_number VARCHAR(40) NULL UNIQUE,
-  phone VARCHAR(30) NOT NULL,
-  specialization VARCHAR(120) NULL,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB;
-
-CREATE TABLE students (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  user_id INT NULL,
-  admission_no VARCHAR(30) NOT NULL UNIQUE,
-  first_name VARCHAR(80) NOT NULL,
-  last_name VARCHAR(80) NOT NULL,
-  gender ENUM('male','female') NOT NULL,
-  date_of_birth DATE NOT NULL,
-  school_section ENUM('junior','secondary') NOT NULL,
-  class_id INT NOT NULL,
-  parent_id INT NOT NULL,
-  admission_date DATE NOT NULL,
-  status ENUM('active','transferred','graduated','inactive') NOT NULL DEFAULT 'active',
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
-  FOREIGN KEY (class_id) REFERENCES classes(id),
-  FOREIGN KEY (parent_id) REFERENCES parents(id),
-  INDEX idx_students_section_class (school_section, class_id)
-) ENGINE=InnoDB;
-
-CREATE TABLE junior_learning_areas (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(120) NOT NULL UNIQUE,
-  code VARCHAR(20) NOT NULL UNIQUE
+  stream VARCHAR(30) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_class_name_stream (name, stream),
+  INDEX idx_classes_name (name)
 ) ENGINE=InnoDB;
 
 CREATE TABLE subjects (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(120) NOT NULL UNIQUE,
-  code VARCHAR(20) NOT NULL UNIQUE
+  name VARCHAR(120) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_subject_name (name)
 ) ENGINE=InnoDB;
 
-CREATE TABLE cbc_assessments (
+CREATE TABLE users (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  student_id INT NOT NULL,
-  learning_area_id INT NOT NULL,
-  teacher_id INT NOT NULL,
-  term TINYINT NOT NULL,
-  academic_year YEAR NOT NULL,
-  competency VARCHAR(160) NOT NULL,
-  descriptor ENUM('Exceeding Expectations','Meeting Expectations','Approaching Expectations','Below Expectations') NOT NULL,
-  remarks TEXT NULL,
-  assessed_at DATE NOT NULL,
-  FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
-  FOREIGN KEY (learning_area_id) REFERENCES junior_learning_areas(id),
-  FOREIGN KEY (teacher_id) REFERENCES teachers(id),
-  INDEX idx_cbc_student_term (student_id, academic_year, term)
+  name VARCHAR(120) NOT NULL,
+  email VARCHAR(160) NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  role ENUM('admin','teacher','parent','student') NOT NULL,
+  linked_student_id INT NULL,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_users_email (email),
+  INDEX idx_users_role_active (role, is_active),
+  INDEX idx_users_linked_student (linked_student_id),
+  CONSTRAINT chk_users_email_not_blank CHECK (email <> ''),
+  CONSTRAINT chk_users_password_hash_not_blank CHECK (password_hash <> '')
 ) ENGINE=InnoDB;
 
-CREATE TABLE grades (
+CREATE TABLE students (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  student_id INT NOT NULL,
-  subject_id INT NOT NULL,
-  teacher_id INT NOT NULL,
-  term TINYINT NOT NULL,
-  academic_year YEAR NOT NULL,
-  cat_score DECIMAL(5,2) NOT NULL DEFAULT 0,
-  exam_score DECIMAL(5,2) NOT NULL DEFAULT 0,
-  total_score DECIMAL(5,2) AS (cat_score + exam_score) STORED,
-  grade_letter CHAR(2) NOT NULL,
-  remarks VARCHAR(255) NULL,
-  FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
-  FOREIGN KEY (subject_id) REFERENCES subjects(id),
-  FOREIGN KEY (teacher_id) REFERENCES teachers(id),
-  UNIQUE KEY uq_grade (student_id, subject_id, term, academic_year),
-  INDEX idx_grades_ranking (academic_year, term, subject_id, total_score)
+  admission_no VARCHAR(30) NOT NULL,
+  name VARCHAR(160) NOT NULL,
+  class_id INT NOT NULL,
+  guardian_user_id INT NULL,
+  medical_notes TEXT NULL,
+  discipline_notes TEXT NULL,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_students_admission_no (admission_no),
+  INDEX idx_students_class_active (class_id, is_active),
+  INDEX idx_students_guardian (guardian_user_id),
+  CONSTRAINT chk_students_name_not_blank CHECK (name <> ''),
+  CONSTRAINT fk_students_class FOREIGN KEY (class_id) REFERENCES classes(id),
+  CONSTRAINT fk_students_guardian FOREIGN KEY (guardian_user_id) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+ALTER TABLE users
+  ADD CONSTRAINT fk_users_linked_student FOREIGN KEY (linked_student_id) REFERENCES students(id) ON DELETE SET NULL;
+
+CREATE TABLE teacher_assignments (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  teacher_user_id INT NOT NULL,
+  class_id INT NOT NULL,
+  subject_id INT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_teacher_assignment (teacher_user_id, class_id, subject_id),
+  INDEX idx_teacher_assignments_scope (class_id, subject_id),
+  CONSTRAINT fk_teacher_assignments_teacher FOREIGN KEY (teacher_user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_teacher_assignments_class FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE,
+  CONSTRAINT fk_teacher_assignments_subject FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 CREATE TABLE attendance (
   id INT AUTO_INCREMENT PRIMARY KEY,
   student_id INT NOT NULL,
-  class_id INT NOT NULL,
-  marked_by INT NOT NULL,
-  attendance_date DATE NOT NULL,
-  status ENUM('present','absent','late','excused') NOT NULL,
+  date DATE NOT NULL,
+  status ENUM('present','absent','excused') NOT NULL,
+  recorded_by INT NOT NULL,
   note VARCHAR(255) NULL,
-  FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
-  FOREIGN KEY (class_id) REFERENCES classes(id),
-  FOREIGN KEY (marked_by) REFERENCES users(id),
-  UNIQUE KEY uq_attendance (student_id, attendance_date),
-  INDEX idx_attendance_class_date (class_id, attendance_date)
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_attendance_student_date (student_id, date),
+  INDEX idx_attendance_date_status (date, status),
+  INDEX idx_attendance_student_date (student_id, date),
+  CONSTRAINT fk_attendance_student FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
+  CONSTRAINT fk_attendance_recorded_by FOREIGN KEY (recorded_by) REFERENCES users(id)
 ) ENGINE=InnoDB;
 
-CREATE TABLE fees (
+CREATE TABLE exam_results (
   id INT AUTO_INCREMENT PRIMARY KEY,
   student_id INT NOT NULL,
-  term TINYINT NOT NULL,
-  academic_year YEAR NOT NULL,
+  subject_id INT NOT NULL,
+  term VARCHAR(30) NOT NULL,
+  marks DECIMAL(5,2) NOT NULL,
+  grade VARCHAR(3) NOT NULL,
+  recorded_by INT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_exam_result (student_id, subject_id, term),
+  INDEX idx_exam_results_subject_term_marks (subject_id, term, marks),
+  INDEX idx_exam_results_student_term (student_id, term),
+  CONSTRAINT chk_exam_results_marks CHECK (marks >= 0 AND marks <= 100),
+  CONSTRAINT chk_exam_results_term_not_blank CHECK (term <> ''),
+  CONSTRAINT fk_exam_results_student FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
+  CONSTRAINT fk_exam_results_subject FOREIGN KEY (subject_id) REFERENCES subjects(id),
+  CONSTRAINT fk_exam_results_recorded_by FOREIGN KEY (recorded_by) REFERENCES users(id)
+) ENGINE=InnoDB;
+
+CREATE TABLE fee_invoices (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  student_id INT NOT NULL,
+  term VARCHAR(30) NOT NULL,
   amount_due DECIMAL(12,2) NOT NULL,
-  amount_paid DECIMAL(12,2) NOT NULL DEFAULT 0,
-  balance DECIMAL(12,2) AS (amount_due - amount_paid) STORED,
-  due_date DATE NOT NULL,
-  FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
-  UNIQUE KEY uq_fee_account (student_id, term, academic_year),
-  INDEX idx_fee_balance (academic_year, term)
+  balance DECIMAL(12,2) NOT NULL,
+  created_by INT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_fee_invoice_student_term (student_id, term),
+  INDEX idx_fee_invoices_term_balance (term, balance),
+  CONSTRAINT chk_fee_invoices_amount_due CHECK (amount_due > 0),
+  CONSTRAINT chk_fee_invoices_balance CHECK (balance >= 0 AND balance <= amount_due),
+  CONSTRAINT chk_fee_invoices_term_not_blank CHECK (term <> ''),
+  CONSTRAINT fk_fee_invoices_student FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
+  CONSTRAINT fk_fee_invoices_created_by FOREIGN KEY (created_by) REFERENCES users(id)
 ) ENGINE=InnoDB;
 
 CREATE TABLE payments (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  fee_id INT NOT NULL,
-  student_id INT NOT NULL,
+  invoice_id INT NOT NULL,
   amount DECIMAL(12,2) NOT NULL,
+  date DATE NOT NULL,
   method ENUM('cash','mpesa','bank','cheque') NOT NULL,
-  reference VARCHAR(80) NOT NULL UNIQUE,
-  received_by INT NOT NULL,
-  paid_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (fee_id) REFERENCES fees(id) ON DELETE CASCADE,
-  FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
-  FOREIGN KEY (received_by) REFERENCES users(id)
+  reference VARCHAR(80) NOT NULL,
+  recorded_by INT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_payments_reference (reference),
+  INDEX idx_payments_invoice_date (invoice_id, date),
+  INDEX idx_payments_date (date),
+  CONSTRAINT chk_payments_amount CHECK (amount > 0),
+  CONSTRAINT chk_payments_reference_not_blank CHECK (reference <> ''),
+  CONSTRAINT fk_payments_invoice FOREIGN KEY (invoice_id) REFERENCES fee_invoices(id) ON DELETE CASCADE,
+  CONSTRAINT fk_payments_recorded_by FOREIGN KEY (recorded_by) REFERENCES users(id)
 ) ENGINE=InnoDB;
 
 CREATE TABLE notifications (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  user_id INT NOT NULL,
-  channel ENUM('email','system') NOT NULL DEFAULT 'email',
-  subject VARCHAR(180) NOT NULL,
+  recipient_user_id INT NOT NULL,
+  type ENUM('payment_receipt','absence_alert','system') NOT NULL,
   message TEXT NOT NULL,
-  status ENUM('pending','sent','failed') NOT NULL DEFAULT 'pending',
   sent_at DATETIME NULL,
+  status ENUM('pending','sent','failed') NOT NULL DEFAULT 'pending',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-  INDEX idx_notifications_status (status)
+  INDEX idx_notifications_recipient (recipient_user_id, created_at),
+  INDEX idx_notifications_status (status),
+  CONSTRAINT fk_notifications_recipient FOREIGN KEY (recipient_user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
-INSERT INTO users (name,email,password_hash,role) VALUES
-('System Administrator','admin@sunshine.local','$2y$12$Mp5M/SzE0hLXSXH1jktFL.1b2LL0gE9fiWkLvWbPm6kO/6fmoaQKy','admin');
-INSERT INTO classes (name, school_section, level_number, stream) VALUES
-('Grade 7','junior',7,'Blue'),('Grade 8','junior',8,'Blue'),('Grade 9','junior',9,'Blue'),
-('Form 1','secondary',1,'East'),('Form 2','secondary',2,'East'),('Form 3','secondary',3,'East'),('Form 4','secondary',4,'East');
-INSERT INTO junior_learning_areas (name, code) VALUES
-('English','ENG'),('Kiswahili','KIS'),('Mathematics','MATH'),('Integrated Science','IS'),('Social Studies','SS'),('Creative Arts and Sports','CAS'),('Pre-Technical Studies','PTS');
-INSERT INTO subjects (name, code) VALUES
-('English','ENG'),('Kiswahili','KIS'),('Mathematics','MATH'),('Biology','BIO'),('Chemistry','CHEM'),('Physics','PHY'),('History','HIS'),('Geography','GEO'),('Business Studies','BST');
+INSERT INTO admission_sequences (id, next_number) VALUES (1, 1);
+
+INSERT INTO users (name, email, password_hash, role) VALUES
+('System Administrator', 'admin@sunshine.local', '$2y$12$Mp5M/SzE0hLXSXH1jktFL.1b2LL0gE9fiWkLvWbPm6kO/6fmoaQKy', 'admin');
+
+INSERT INTO classes (name, stream) VALUES
+('Grade 7', 'Blue'), ('Grade 8', 'Blue'), ('Grade 9', 'Blue'),
+('Form 1', 'East'), ('Form 2', 'East'), ('Form 3', 'East'), ('Form 4', 'East');
+
+INSERT INTO subjects (name) VALUES
+('English'), ('Kiswahili'), ('Mathematics'), ('Biology'), ('Chemistry'), ('Physics'), ('History'), ('Geography'), ('Business Studies');

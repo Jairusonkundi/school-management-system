@@ -2,24 +2,92 @@
 namespace App\Models;
 
 use App\Core\Model;
+use InvalidArgumentException;
 
 class Academic extends Model
 {
-    public function computeGrade(float $total): string
+    public function computeGrade(float $marks): string
     {
-        return match (true) { $total >= 80 => 'A', $total >= 75 => 'A-', $total >= 70 => 'B+', $total >= 65 => 'B', $total >= 60 => 'B-', $total >= 55 => 'C+', $total >= 50 => 'C', $total >= 45 => 'C-', $total >= 40 => 'D+', $total >= 35 => 'D', default => 'E' };
+        return match (true) {
+            $marks >= 80 => 'A',
+            $marks >= 70 => 'B',
+            $marks >= 60 => 'C',
+            $marks >= 50 => 'D',
+            default => 'E',
+        };
     }
 
-    public function recordGrade(array $data): void
+    public function recordResult(array $data, array $user): void
     {
-        $letter = $this->computeGrade((float)$data['cat_score'] + (float)$data['exam_score']);
-        $stmt = $this->db->prepare('INSERT INTO grades (student_id, subject_id, teacher_id, term, academic_year, cat_score, exam_score, grade_letter, remarks) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE cat_score=VALUES(cat_score), exam_score=VALUES(exam_score), grade_letter=VALUES(grade_letter), remarks=VALUES(remarks)');
-        $stmt->execute([$data['student_id'], $data['subject_id'], $data['teacher_id'], $data['term'], $data['academic_year'], $data['cat_score'], $data['exam_score'], $letter, $data['remarks']]);
+        $studentId = (int)($data['student_id'] ?? 0);
+        $subjectId = (int)($data['subject_id'] ?? 0);
+        $marks = (float)($data['marks'] ?? -1);
+        if ($marks < 0 || $marks > 100) {
+            throw new InvalidArgumentException('Marks must be between 0 and 100.');
+        }
+        if (!$this->subjectExists($subjectId)) {
+            throw new InvalidArgumentException('Select a valid subject.');
+        }
+        if (trim($data['term'] ?? '') === '') {
+            throw new InvalidArgumentException('Term is required.');
+        }
+        if (!(new Student())->canAccessStudent($user, $studentId, $subjectId)) {
+            throw new InvalidArgumentException('You are not assigned to record marks for this student or subject.');
+        }
+
+        $stmt = $this->db->prepare('INSERT INTO exam_results (student_id, subject_id, term, marks, grade, recorded_by) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE marks = VALUES(marks), grade = VALUES(grade), recorded_by = VALUES(recorded_by)');
+        $stmt->execute([
+            $studentId,
+            $subjectId,
+            trim($data['term']),
+            $marks,
+            $this->computeGrade($marks),
+            $user['id'],
+        ]);
     }
 
-    public function recordCbc(array $data): void
+    public function results(?int $classId, ?string $term, array $user): array
     {
-        $stmt = $this->db->prepare('INSERT INTO cbc_assessments (student_id, learning_area_id, teacher_id, term, academic_year, competency, descriptor, remarks, assessed_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
-        $stmt->execute([$data['student_id'], $data['learning_area_id'], $data['teacher_id'], $data['term'], $data['academic_year'], $data['competency'], $data['descriptor'], $data['remarks'], $data['assessed_at']]);
+        $term = trim((string)$term);
+        $sql = 'SELECT er.*, s.admission_no, s.name AS student_name, c.name AS class_name, c.stream, sub.name AS subject_name,
+                       AVG(er.marks) OVER (PARTITION BY s.class_id, er.subject_id, er.term) AS class_average,
+                       RANK() OVER (PARTITION BY s.class_id, er.subject_id, er.term ORDER BY er.marks DESC) AS class_rank
+                FROM exam_results er
+                JOIN students s ON s.id = er.student_id
+                JOIN classes c ON c.id = s.class_id
+                JOIN subjects sub ON sub.id = er.subject_id
+                WHERE 1 = 1';
+        $params = [];
+        if ($classId) {
+            $sql .= ' AND s.class_id = ?';
+            $params[] = $classId;
+        }
+        if ($term !== '') {
+            $sql .= ' AND er.term = ?';
+            $params[] = $term;
+        }
+        if ($user['role'] === 'teacher') {
+            $sql .= ' AND EXISTS (SELECT 1 FROM teacher_assignments ta WHERE ta.teacher_user_id = ? AND ta.class_id = s.class_id AND (ta.subject_id = er.subject_id OR ta.subject_id IS NULL))';
+            $params[] = $user['id'];
+        } elseif (in_array($user['role'], ['parent', 'student'], true)) {
+            $sql .= ' AND s.id = ?';
+            $params[] = (int)($user['linked_student_id'] ?? 0);
+        }
+        $sql .= ' ORDER BY er.term DESC, c.name, sub.name, class_rank LIMIT 500';
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    public function performanceSummary(): array
+    {
+        return $this->db->query('SELECT c.name, c.stream, sub.name AS subject_name, er.term, AVG(er.marks) AS average_marks, MAX(er.marks) AS highest_marks, MIN(er.marks) AS lowest_marks FROM exam_results er JOIN students s ON s.id = er.student_id JOIN classes c ON c.id = s.class_id JOIN subjects sub ON sub.id = er.subject_id GROUP BY c.id, sub.id, er.term ORDER BY er.term DESC, c.name, sub.name')->fetchAll();
+    }
+
+    private function subjectExists(int $subjectId): bool
+    {
+        $stmt = $this->db->prepare('SELECT COUNT(*) FROM subjects WHERE id = ?');
+        $stmt->execute([$subjectId]);
+        return (int)$stmt->fetchColumn() > 0;
     }
 }

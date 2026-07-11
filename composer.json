@@ -1,1 +1,1 @@
-{"name":"sunshine-kaseveni/sms","description":"School Management System for Sunshine Kaseveni Academy","type":"project","require":{"php":">=8.1","phpmailer/phpmailer":"^6.9"},"autoload":{"psr-4":{"App\\":"app/"}}}
+{"name":"sunshine-kaseveni/sms","description":"School Management System for Sunshine Kaseveni Academy","type":"project","require":{"php":">=8.1","phpmailer/phpmailer":"^6.9"},"autoload":{"psr-4":{"App\\":"app/"}},"scripts":{"test":"php tests/basic_checks.php"}}

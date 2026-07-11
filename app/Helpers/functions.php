@@ -14,3 +14,13 @@ function post(string $key, $default = null)
 {
     return $_POST[$key] ?? $default;
 }
+
+function csrf_field(): string
+{
+    return '<input type="hidden" name="csrf_token" value="' . e(\App\Core\Auth::csrfToken()) . '">';
+}
+
+function money($amount): string
+{
+    return 'KES ' . number_format((float)$amount, 2);
+}

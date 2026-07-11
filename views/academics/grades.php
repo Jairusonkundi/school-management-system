@@ -1,1 +1,54 @@
-<h2>Secondary Grade Entry</h2><form class="card form-grid" method="post"><label>Student<select name="student_id"><?php foreach ($lookups->students() as $s): ?><option value="<?= e($s['id']) ?>"><?= e($s['admission_no'].' '.$s['first_name'].' '.$s['last_name']) ?></option><?php endforeach; ?></select></label><label>Subject<select name="subject_id"><?php foreach ($lookups->subjects() as $s): ?><option value="<?= e($s['id']) ?>"><?= e($s['name']) ?></option><?php endforeach; ?></select></label><label>Teacher ID<input type="number" name="teacher_id" required></label><label>Term<input type="number" name="term" min="1" max="3" required></label><label>Year<input type="number" name="academic_year" value="<?= date('Y') ?>" required></label><label>CAT score<input type="number" step="0.01" name="cat_score" max="30" required></label><label>Exam score<input type="number" step="0.01" name="exam_score" max="70" required></label><label>Remarks<input name="remarks"></label><button>Save Grade</button></form>
+<h2>Exam Marks</h2>
+<form class="card form-grid" method="post">
+    <?= csrf_field() ?>
+    <label>Student
+        <select name="student_id" required>
+            <?php foreach ($students as $s): ?>
+                <option value="<?= e($s['id']) ?>"><?= e($s['admission_no'] . ' ' . $s['name']) ?></option>
+            <?php endforeach; ?>
+        </select>
+    </label>
+    <label>Subject
+        <select name="subject_id" required>
+            <?php foreach ($subjects as $subject): ?>
+                <option value="<?= e($subject['id']) ?>"><?= e($subject['name']) ?></option>
+            <?php endforeach; ?>
+        </select>
+    </label>
+    <label>Term<input name="term" placeholder="2026 Term 1" required></label>
+    <label>Marks<input type="number" step="0.01" min="0" max="100" name="marks" required></label>
+    <button>Save Marks</button>
+</form>
+
+<h3>Results, Class Average and Ranking</h3>
+<form class="card form-grid" method="get">
+    <input type="hidden" name="route" value="academics/grades">
+    <label>Class
+        <select name="class_id">
+            <option value="">All assigned classes</option>
+            <?php foreach ($classes as $class): ?>
+                <option value="<?= e($class['id']) ?>" <?= (string)($_GET['class_id'] ?? '') === (string)$class['id'] ? 'selected' : '' ?>><?= e($class['name'] . ' ' . $class['stream']) ?></option>
+            <?php endforeach; ?>
+        </select>
+    </label>
+    <label>Term<input name="term" value="<?= e($_GET['term'] ?? '') ?>"></label>
+    <button>Filter</button>
+</form>
+
+<table>
+    <thead><tr><th>Term</th><th>Student</th><th>Class</th><th>Subject</th><th>Marks</th><th>Grade</th><th>Class Avg</th><th>Rank</th></tr></thead>
+    <tbody>
+    <?php foreach ($results as $row): ?>
+        <tr>
+            <td><?= e($row['term']) ?></td>
+            <td><?= e($row['admission_no'] . ' ' . $row['student_name']) ?></td>
+            <td><?= e($row['class_name'] . ' ' . $row['stream']) ?></td>
+            <td><?= e($row['subject_name']) ?></td>
+            <td><?= e($row['marks']) ?></td>
+            <td><?= e($row['grade']) ?></td>
+            <td><?= number_format((float)$row['class_average'], 2) ?></td>
+            <td><?= e($row['class_rank']) ?></td>
+        </tr>
+    <?php endforeach; ?>
+    </tbody>
+</table>
