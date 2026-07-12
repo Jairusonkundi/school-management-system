@@ -9,11 +9,10 @@ class Academic extends Model
     public function computeGrade(float $marks): string
     {
         return match (true) {
-            $marks >= 80 => 'A',
-            $marks >= 70 => 'B',
-            $marks >= 60 => 'C',
-            $marks >= 50 => 'D',
-            default => 'E',
+            $marks >= 80 => 'EE',
+            $marks >= 50 => 'ME',
+            $marks >= 30 => 'AE',
+            default => 'BE',
         };
     }
 

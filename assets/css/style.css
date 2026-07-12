@@ -1,0 +1,209 @@
+:root {
+    --ska-green-primary: #1F7A4D;
+    --ska-green-dark: #145C38;
+    --ska-green-light: #E7F5EC;
+    --ska-amber: #F5A623;
+    --ska-coral: #FF6B4A;
+    --ska-white: #FFFFFF;
+    --ska-text-dark: #1E2A22;
+    --ska-teal: #2E8B8B;
+}
+
+body {
+    font-family: "Times New Roman", Arial, sans-serif;
+    background: #f4f6f9;
+    color: var(--ska-text-dark);
+    padding-top: 64px;
+}
+
+.navbar {
+    background: var(--ska-green-primary);
+    min-height: 64px;
+}
+
+.brand-mark {
+    display: inline-grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--ska-amber);
+    color: var(--ska-text-dark);
+    font-weight: 800;
+    margin-right: 10px;
+}
+
+.role-badge-admin { background: var(--ska-amber); color: var(--ska-text-dark); }
+.role-badge-teacher { background: var(--ska-green-light); color: var(--ska-green-dark); }
+.role-badge-parent { background: var(--ska-teal); color: var(--ska-white); }
+.role-badge-student { background: var(--ska-coral); color: var(--ska-white); }
+
+.sidebar-toggle {
+    border: 1px solid rgba(255,255,255,.55);
+    color: var(--ska-white);
+    background: transparent;
+    border-radius: 8px;
+    padding: 6px 10px;
+}
+
+.sidebar {
+    position: fixed;
+    top: 64px;
+    left: 0;
+    width: 240px;
+    height: calc(100vh - 64px);
+    background: var(--ska-white);
+    border-right: 1px solid #d9e8de;
+    color: var(--ska-white);
+    padding: 18px 14px;
+    overflow-y: auto;
+    z-index: 1020;
+}
+
+.sidebar-title {
+    font-size: 1.1rem;
+    font-weight: bold;
+    margin-bottom: 16px;
+    color: var(--ska-green-dark);
+}
+
+.sidebar .nav-link {
+    color: var(--ska-text-dark);
+    border-radius: 8px;
+    margin-bottom: 4px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 9px 10px;
+}
+
+.sidebar .nav-link:hover {
+    background: var(--ska-green-light);
+    color: var(--ska-green-dark);
+}
+
+.sidebar .nav-link.active {
+    background: var(--ska-green-light);
+    color: var(--ska-green-dark);
+    font-weight: 700;
+}
+
+.sidebar-section {
+    font-size: .72rem;
+    font-weight: 800;
+    color: #6b7f72;
+    letter-spacing: .08em;
+    margin: 18px 10px 8px;
+    text-transform: uppercase;
+}
+
+.nav-icon {
+    width: 18px;
+    height: 18px;
+}
+
+.main-content {
+    margin-left: 240px;
+    padding: 28px 24px 16px;
+}
+
+.metric-card,
+.action-tile {
+    background: var(--ska-white);
+    border: 0;
+    border-top: 4px solid var(--ska-green-primary);
+    border-radius: 8px;
+    box-shadow: 0 0.35rem 1rem rgba(31, 56, 100, 0.12);
+}
+
+.metric-card .number {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--ska-green-dark);
+}
+
+thead {
+    background: var(--ska-green-primary);
+    color: var(--ska-white);
+}
+
+tbody tr:hover {
+    background: var(--ska-green-light);
+}
+
+.btn-primary {
+    --bs-btn-bg: var(--ska-green-primary);
+    --bs-btn-border-color: var(--ska-green-primary);
+    --bs-btn-hover-bg: var(--ska-green-dark);
+    --bs-btn-hover-border-color: var(--ska-green-dark);
+}
+
+a {
+    color: var(--ska-green-primary);
+}
+
+a:hover {
+    color: var(--ska-green-dark);
+}
+
+.badge-cbc-ee {
+    background: var(--ska-green-primary);
+    color: var(--ska-white);
+}
+
+.badge-cbc-me {
+    background: var(--ska-teal);
+    color: var(--ska-white);
+}
+
+.badge-cbc-ae {
+    background: var(--ska-amber);
+    color: var(--ska-text-dark);
+}
+
+.badge-cbc-be {
+    background: var(--ska-coral);
+    color: var(--ska-white);
+}
+
+.badge-pass {
+    background: var(--ska-green-light);
+    color: var(--ska-green-dark);
+}
+
+.badge-fail {
+    background: #fff0ec;
+    color: #a73f28;
+}
+
+.main-footer {
+    border-top: 1px solid #dbe7df;
+    color: #6b7f72;
+    font-size: .9rem;
+    margin-top: 36px;
+    padding: 18px 0 4px;
+}
+
+@media (max-width: 768px) {
+    .sidebar {
+        transform: translateX(-100%);
+        transition: transform .2s ease;
+    }
+    body.sidebar-open .sidebar { transform: translateX(0); }
+    .main-content {
+        margin-left: 0;
+    }
+}
+
+@media print {
+    .sidebar,
+    .navbar,
+    .no-print,
+    .d-print-none {
+        display: none !important;
+    }
+    .main-content {
+        margin-left: 0;
+        padding: 0;
+    }
+}

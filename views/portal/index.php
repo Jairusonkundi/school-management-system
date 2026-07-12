@@ -22,14 +22,14 @@
 
 <h3>Results</h3>
 <table>
-    <thead><tr><th>Term</th><th>Subject</th><th>Marks</th><th>Grade</th><th>Class Avg</th><th>Rank</th></tr></thead>
+    <thead><tr><th>Term</th><th>Subject</th><th>Marks</th><th>CBC Level</th><th>Class Avg</th><th>Rank</th></tr></thead>
     <tbody>
     <?php foreach ($results as $row): ?>
         <tr>
             <td><?= e($row['term']) ?></td>
             <td><?= e($row['subject_name']) ?></td>
             <td><?= e($row['marks']) ?></td>
-            <td><?= e($row['grade']) ?></td>
+            <td><?= e(cbc_level_label($row['grade'])) ?></td>
             <td><?= number_format((float)$row['class_average'], 2) ?></td>
             <td><?= e($row['class_rank']) ?></td>
         </tr>

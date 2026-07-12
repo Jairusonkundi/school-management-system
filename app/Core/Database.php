@@ -13,7 +13,8 @@ class Database
         if (self::$instance === null) {
             $config = require __DIR__ . '/../../config/config.php';
             $db = $config['db'];
-            $dsn = "mysql:host={$db['host']};dbname={$db['name']};charset={$db['charset']}";
+            $port = isset($db['port']) ? ";port={$db['port']}" : '';
+            $dsn = "mysql:host={$db['host']}{$port};dbname={$db['name']};charset={$db['charset']}";
             try {
                 self::$instance = new PDO($dsn, $db['user'], $db['pass'], [
                     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,

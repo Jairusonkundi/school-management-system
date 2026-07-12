@@ -1,10 +1,11 @@
 <?php
 return [
     'app_name' => 'Sunshine Kaseveni Academy SMS',
-    'base_url' => 'http://localhost/school-management-system/public',
+    'base_url' => '',
     'db' => [
         'host' => '127.0.0.1',
-        'name' => 'sunshine_sms',
+        'port' => '3307',
+        'name' => 'ska_sms_db',
         'user' => 'root',
         'pass' => '',
         'charset' => 'utf8mb4',
